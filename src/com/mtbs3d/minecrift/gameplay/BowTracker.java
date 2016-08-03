@@ -15,6 +15,7 @@ import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.math.Vec3d;
 
 public class BowTracker {
@@ -30,12 +31,14 @@ public class BowTracker {
 	private boolean pressed, lastpressed;	
 	
 	private boolean canDraw, lastcanDraw;
+	private double startDrawTime;
 	
 	
 	private Vec3d leftHandAim;
 	
-	private final double notchDotThreshold = 10;
-	private double maxDraw = .7;
+	private final double notchDotThreshold = 20;
+	private double maxDraw ;
+	private double maxDrawMillis=1100;
 
 	private Vec3d aim;
 	
@@ -46,7 +49,9 @@ public class BowTracker {
 	}
 		
 	public double getDrawPercent(){
-		return currentDraw / maxDraw;	
+		double target= Math.min(currentDraw / maxDraw,1.0);
+		double cap=(Minecraft.getSystemTime()-startDrawTime)/ maxDrawMillis;
+		return target<cap ? target : cap;
 	}
 	
 	public boolean isNotched(){
@@ -64,6 +69,7 @@ public class BowTracker {
 	float tsNotch = 0;
 	
 	int hapcounter = 0;
+	int lasthapStep=0;
 	
 	public void doProcess(IRoomscaleAdapter provider, EntityPlayerSP player){
 
@@ -84,15 +90,20 @@ public class BowTracker {
 		lastpressed = pressed;
 		lastDraw = currentDraw;
 		lastcanDraw = canDraw;
-		maxDraw = Minecraft.getMinecraft().thePlayer.height * 0.25;
+		maxDraw = Minecraft.getMinecraft().thePlayer.height * 0.07;
 
 		Vec3d rightPos = provider.getControllerPos_World(0);
 		Vec3d leftPos = provider.getControllerPos_World(1);
 		controllersDist = leftPos.distanceTo(rightPos);
-		
+
+		Vec3d forward = new Vec3d(0,1,0);
+
+		Vec3d stringPos=provider.getCustomControllerVector(1,forward).scale(maxDraw*0.5).add(leftPos);
+		double notchDist=rightPos.distanceTo(stringPos);
+
 		aim = rightPos.subtract(leftPos).normalize();
 
-		Vector3f forward = new Vector3f(0,0,1);
+
 
 		Vec3d rightaim3 = provider.getControllerDir_World(0);
 		
@@ -110,9 +121,13 @@ public class BowTracker {
 		
 		ItemStack ammo = ((ItemBow) bow.getItem()).findAmmoItemStack(player);
 		
-		if(ammo !=null && controllersDist <= notchDistThreshold && controllersDot <= notchDotThreshold)
+		if(ammo !=null && notchDist <= notchDistThreshold && controllersDot <= notchDotThreshold)
 		{
 			//can draw
+			if(!canDraw) {
+				startDrawTime = Minecraft.getSystemTime();
+			}
+
 			canDraw = true;
 			tsNotch = Minecraft.getSystemTime();
 			
@@ -157,19 +172,42 @@ public class BowTracker {
 			if (currentDraw > maxDraw) currentDraw = maxDraw;		
 			
 			int hap = 0;
-			if (getDrawPercent() > 0 ) hap = (int) (getDrawPercent() * 1000)+ 200;
+			if (getDrawPercent() > 0 ) hap = (int) (getDrawPercent() * 500)+ 700;
 		
-			int use = (int) (bow.getMaxItemUseDuration() - getDrawPercent() * bow.getMaxItemUseDuration());
-			if	(use >= bow.getMaxItemUseDuration()) use = bow.getMaxItemUseDuration() -1;
-			player.setItemInUseClient(bow);//client draw only
-			player.setItemInUseCountClient(use -1); //do this cause the above doesnt set the counts if same item.
-			hapcounter ++ ;
-			if (hapcounter % 4 == 0)
-				provider.triggerHapticPulse(0, hap);     
+			int use = (int) (bow.getMaxItemUseDuration() - getDrawPercent() * maxDrawMillis);
 
+			int stage0=bow.getMaxItemUseDuration();
+			int stage1=bow.getMaxItemUseDuration()-15;
+			int stage2=0;
+
+			player.setItemInUseClient(bow);//client draw only
+			double drawperc=getDrawPercent();
+			if(drawperc>=1) {
+				player.setItemInUseCountClient(stage2);
+
+			}else if(drawperc>0.4) {
+				player.setItemInUseCountClient(stage1);
+			}else {
+				player.setItemInUseCountClient(stage0);
+			}
+
+			int hapstep=(int)(drawperc*4*4);
+			if ( hapstep % 4 == 0 && lasthapStep!= hapstep) {
+				provider.triggerHapticPulse(0, hap);
+				if(drawperc==1)
+					provider.triggerHapticPulse(1,hap);
+			}
+
+			//else if(drawperc==1 && hapcounter % 8 == 0){
+			//	provider.triggerHapticPulse(0,400);     //Not sure if i like this part or not
+			//}
+
+			lasthapStep = hapstep;
+			hapcounter++;
 
 		} else {
 			hapcounter = 0;
+			lasthapStep=0;
 		}
 
 

@@ -60,7 +60,7 @@
  import net.minecraft.world.storage.MapData;
  import shadersmod.client.Shaders;
  
-@@ -49,7 +76,7 @@
+@@ -49,39 +76,40 @@
      private float prevEquippedProgressOffHand;
      private final RenderManager renderManager;
      private final RenderItem itemRenderer;
@@ -69,7 +69,10 @@
      public ItemRenderer(Minecraft mcIn)
      {
          this.mc = mcIn;
-@@ -59,29 +86,29 @@
+         this.renderManager = mcIn.getRenderManager();
+         this.itemRenderer = mcIn.getRenderItem();
++	    myRenderVRPlayer = new RenderVRPlayer(this.renderManager);
+     }
  
      public void renderItem(EntityLivingBase entityIn, ItemStack heldStack, ItemCameraTransforms.TransformType transform)
      {
@@ -114,7 +117,7 @@
  
              GlStateManager.popMatrix();
          }
-@@ -107,7 +134,7 @@
+@@ -107,7 +135,7 @@
          GlStateManager.popMatrix();
      }
  
@@ -123,7 +126,7 @@
      {
          AbstractClientPlayer abstractclientplayer = this.mc.thePlayer;
          int i = this.mc.theWorld.getCombinedLight(new BlockPos(abstractclientplayer.posX, abstractclientplayer.posY + (double)abstractclientplayer.getEyeHeight(), abstractclientplayer.posZ), 0);
-@@ -122,6 +149,7 @@
+@@ -122,6 +150,7 @@
          OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, f, f1);
      }
  
@@ -131,7 +134,7 @@
      private void rotateArm(float p_187458_1_)
      {
          EntityPlayerSP entityplayersp = this.mc.thePlayer;
-@@ -142,6 +170,7 @@
+@@ -142,6 +171,7 @@
          return f;
      }
  
@@ -139,7 +142,7 @@
      private void renderArms()
      {
          if (!this.mc.thePlayer.isInvisible())
-@@ -156,6 +185,7 @@
+@@ -156,6 +186,7 @@
          }
      }
  
@@ -147,7 +150,7 @@
      private void renderArm(EnumHandSide p_187455_1_)
      {
          this.mc.getTextureManager().bindTexture(this.mc.thePlayer.getLocationSkin());
-@@ -183,27 +213,29 @@
+@@ -183,27 +214,29 @@
      private void renderMapFirstPersonSide(float p_187465_1_, EnumHandSide p_187465_2_, float p_187465_3_, ItemStack p_187465_4_)
      {
          float f = p_187465_2_ == EnumHandSide.RIGHT ? 1.0F : -1.0F;
@@ -192,7 +195,7 @@
          GlStateManager.popMatrix();
      }
  
-@@ -212,14 +244,17 @@
+@@ -212,14 +245,17 @@
          float f = MathHelper.sqrt_float(p_187463_3_);
          float f1 = -0.2F * MathHelper.sin(p_187463_3_ * (float)Math.PI);
          float f2 = -0.4F * MathHelper.sin(f * (float)Math.PI);
@@ -216,7 +219,7 @@
          this.renderMapFirstPerson(this.itemStackMainHand);
      }
  
-@@ -250,100 +285,123 @@
+@@ -250,100 +286,126 @@
          GlStateManager.enableLighting();
      }
  
@@ -278,7 +281,7 @@
 +        
 +        GlStateManager.pushMatrix();
 +        
-+        	this.doSwingItemAnimation(side, swingProgress);	
++			this.doSwingItemAnimation(side, swingProgress);
 +        
 +        	GlStateManager.scale(0.4f, 0.4F, 0.4F);
 +        	GlStateManager.translate(-0.375*-f, 0, .75);
@@ -300,7 +303,7 @@
 -
 -    private void transformEatFirstPerson(float p_187454_1_, EnumHandSide p_187454_2_, ItemStack p_187454_3_)
 +    
-+    private RenderVRPlayer myRenderVRPlayer = new RenderVRPlayer(this.renderManager);
++    private RenderVRPlayer myRenderVRPlayer;
 +    
 +  //was transformEatFirstPerson
 +    private void doEatAnimation(float progress, EnumHandSide side, ItemStack item)
@@ -317,15 +320,14 @@
 +      //      GlStateManager.translate(0.0F, f2, 0.0F);
          }
  
-         float f3 = 1.0F - (float)Math.pow((double)f1, 27.0D);
+-        float f3 = 1.0F - (float)Math.pow((double)f1, 27.0D);
 -        int i = p_187454_2_ == EnumHandSide.RIGHT ? 1 : -1;
 -        GlStateManager.translate(f3 * 0.6F * (float)i, f3 * -0.5F, f3 * 0.0F);
-+        int i = side == EnumHandSide.RIGHT ? 1 : -1;
-+      //  GlStateManager.translate(f3 * 0.6F * (float)i, f3 * -0.5F, f3 * 0.0F);
-         GlStateManager.rotate((float)i * f3 * 90.0F, 0.0F, 1.0F, 0.0F);
-         GlStateManager.rotate(f3 * 10.0F, 1.0F, 0.0F, 0.0F);
-         GlStateManager.rotate((float)i * f3 * 30.0F, 0.0F, 0.0F, 1.0F);
-     }
+-        GlStateManager.rotate((float)i * f3 * 90.0F, 0.0F, 1.0F, 0.0F);
+-        GlStateManager.rotate(f3 * 10.0F, 1.0F, 0.0F, 0.0F);
+-        GlStateManager.rotate((float)i * f3 * 30.0F, 0.0F, 0.0F, 1.0F);
+-    }
++	    if(!Minecraft.getMinecraft().autoFood.eating) {
  
 -    private void transformFirstPerson(EnumHandSide p_187453_1_, float p_187453_2_)
 -    {
@@ -339,16 +341,26 @@
 -    }
 -
 -    private void transformSideFirstPerson(EnumHandSide p_187459_1_, float p_187459_2_)
-+    //was transformFirstPerson
-+    private void doSwingItemAnimation(EnumHandSide side, float swingprogress)
-     {
+-    {
 -        int i = p_187459_1_ == EnumHandSide.RIGHT ? 1 : -1;
 -        GlStateManager.translate((float)i * 0.56F, -0.52F + p_187459_2_ * -0.6F, -0.72F);
++		    float f3 = 1.0F - (float) Math.pow((double) f1, 27.0D);
++		    int i = side == EnumHandSide.RIGHT ? 1 : -1;
++		    //  GlStateManager.translate(f3 * 0.6F * (float)i, f3 * -0.5F, f3 * 0.0F);
++		    GlStateManager.rotate((float) i * f3 * 90.0F, 0.0F, 1.0F, 0.0F);
++		    GlStateManager.rotate(f3 * 10.0F, 1.0F, 0.0F, 0.0F);
++		    GlStateManager.rotate((float) i * f3 * 30.0F, 0.0F, 0.0F, 1.0F);
++	    }
++    }
++
++    //was transformFirstPerson
++    private void doSwingItemAnimation(EnumHandSide side, float swingprogress)
++    {
 +    	//VIVE TODO: SOMETHING
 +        int i = side == EnumHandSide.RIGHT ? 1 : -1;
 +        float f = MathHelper.sin(swingprogress * swingprogress * (float)Math.PI);
 +      //  GlStateManager.rotate((float)i * (45.0F + f * -20.0F), 0.0F, 1.0F, 0.0F);
-+        float f1 = 0.5f * MathHelper.sin(MathHelper.sqrt_float(swingprogress) * (float)Math.PI);
++	    float f1 = 0.5f * MathHelper.sin(MathHelper.sqrt_float(swingprogress) * (float)Math.PI);
 +        GlStateManager.translate(0, 0,- f1);
 +        
 +//        GlStateManager.rotate((float)i * f1 * -20.0F, 0.0F, 0.0F, 1.0F);
@@ -404,7 +416,7 @@
              }
          }
  
-@@ -352,192 +410,442 @@
+@@ -352,192 +414,441 @@
          this.rotateArm(partialTicks);
          GlStateManager.enableRescaleNormal();
  
@@ -772,10 +784,9 @@
 +    		
 +	    	if (shouldrenderhand && !player.isInvisible())
 +	    	{
-+		        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-+
-+	    		this.renderArmFirstPerson(equippingprogress, player.swingingHand == hand ? swingProgress : 0, enumhandside);
-+	    	}
++			    GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
++			    this.renderArmFirstPerson(equippingprogress, player.swingingHand == hand ? swingProgress : 0, enumhandside);
++		    }
 +			
 +	    	
      }
@@ -883,9 +894,9 @@
 +        }
 +		
 +        
-+        GlStateManager.enableAlpha();
-+    }
-+
+         GlStateManager.enableAlpha();
+     }
+ 
 +    private void renderPortal(float timeInPortal, ScaledResolution scaledRes)
 +    {
 +        if (timeInPortal < 1.0F)
@@ -918,9 +929,9 @@
 +        tessellator.draw();
 +        GlStateManager.depthMask(true);
 +        GlStateManager.enableDepth();
-         GlStateManager.enableAlpha();
++        GlStateManager.enableAlpha();
 +        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-     }
++    }
 +    
 +    public boolean isInsideOfMaterial(Vec3d pos, Material materialIn)
 +    {
@@ -949,7 +960,7 @@
 +    	return mc.theWorld.getBlockState(bp).getBlock().isVisuallyOpaque();
 +    }
 +
- 
++
 +    
      /**
       * Render the block in the player's hand
@@ -977,7 +988,7 @@
          vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
          vertexbuffer.pos(-1.0D, -1.0D, -0.5D).tex((double)f7, (double)f9).endVertex();
          vertexbuffer.pos(1.0D, -1.0D, -0.5D).tex((double)f6, (double)f9).endVertex();
-@@ -561,17 +869,14 @@
+@@ -561,17 +872,14 @@
              VertexBuffer vertexbuffer = tessellator.getBuffer();
              float f = this.mc.thePlayer.getBrightness(partialTicks);
              GlStateManager.color(f, f, f, 0.5F);

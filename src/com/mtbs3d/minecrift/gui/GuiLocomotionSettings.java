@@ -28,7 +28,9 @@ public class GuiLocomotionSettings extends BaseGuiSettings implements GuiEventEx
             VRSettings.VrOptions.LIMIT_TELEPORT,
             VRSettings.VrOptions.ALLOW_MODE_SWITCH,
             VRSettings.VrOptions.BCB_ON,
-            
+            VRSettings.VrOptions.REALISTIC_JUMP,
+            VRSettings.VrOptions.REALISTIC_SNEAK,
+            VRSettings.VrOptions.WALK_MULTIPLIER,
             //END JRBUDDA
             
             
@@ -94,6 +96,11 @@ public class GuiLocomotionSettings extends BaseGuiSettings implements GuiEventEx
                     minValue = 0f;
                     maxValue = 0.75f;
                     increment = 0.005f;
+                }
+                else if (var8 == VRSettings.VrOptions.WALK_MULTIPLIER){
+                    minValue=1f;
+                    maxValue=10f;
+                    increment=0.1f;
                 }
                 // VIVE START - new options
                 GuiSliderEx slider = new GuiSliderEx(var8.returnEnumOrdinal(), width, height - 20, var8, this.guivrSettings.getKeyBinding(var8), minValue, maxValue, increment, this.guivrSettings.getOptionFloatValue(var8));
@@ -162,6 +169,7 @@ public class GuiLocomotionSettings extends BaseGuiSettings implements GuiEventEx
                 vr.vrFreeMove = true;
                 vr.vrLimitedSurvivalTeleport = true;
                 vr.vrShowBlueCircleBuddy = true;
+                vr.walkMultiplier=1;
                 //end jrbudda
                 
                 Minecraft.getMinecraft().gameSettings.viewBobbing = true;
@@ -367,6 +375,22 @@ public class GuiLocomotionSettings extends BaseGuiSettings implements GuiEventEx
                             "Shows your body position as a blue dot on the gound.",
                             "This is your Blue Circle Buddy (tm).",
                             "Do not lose your Blue Circle Buddy."
+                    };
+                case REALISTIC_JUMP:
+                    return new String[]{
+                            "If turned on, once you jump in real life",
+                            "Your player will also jump"
+                    };
+                case REALISTIC_SNEAK:
+                    return new String[]{
+                            "If turned on, once you duck in real life",
+                            "Your player will also sneak"
+                    };
+                case WALK_MULTIPLIER:
+                    return new String[]{
+                            "Multiplies your position in the room by a factor",
+                            "Allows you to walk around more,",
+                            "but may cause motion sickness"
                     };
                 default:
                     return null;

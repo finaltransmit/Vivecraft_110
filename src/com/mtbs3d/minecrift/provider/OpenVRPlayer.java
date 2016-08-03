@@ -81,6 +81,8 @@ public class OpenVRPlayer implements IRoomscaleAdapter
     public boolean noTeleportClient = true;
     
     private float teleportEnergy;
+
+	private Vec3d walkMultOffset=Vec3d.ZERO;
     
     public static OpenVRPlayer get()
     {
@@ -89,7 +91,7 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 
     public OpenVRPlayer()
     {
-        for (int i=0;i<50;i++)
+        for (int i=0;i<50;i++) //Lol what is this?
         {
       }
     }
@@ -163,17 +165,51 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 	}
 
 	
-	
+	boolean debugoutputdone=false;
 	
     public void onLivingUpdate(EntityPlayerSP player, Minecraft mc, Random rand)
     {
     	if(!player.initFromServer) return;
     	
         updateSwingAttack();
+
+	    if(!debugoutputdone){
+		    System.out.println("<Debug info start>");
+		    System.out.println("Room object: "+mc.roomScale);
+		    System.out.println("Room origin: "+mc.roomScale.getRoomOriginPos_World());
+		    System.out.println("Hmd position room: "+mc.roomScale.getHMDPos_Room());
+		    System.out.println("Hmd position world: "+mc.roomScale.getHMDPos_World());
+		    System.out.println("<Debug info end>");
+
+		    debugoutputdone=true;
+	    }
+
+
+
+	    //Sneak and jump
+	    float eyeheight=mc.vrSettings.getMinecraftPlayerEyeHeight();
+
+	    double currentY=getHeadCenter(mc).yCoord;
+
+	    if(mc.vrSettings.realisticJumpEnabled)
+	    if(currentY>eyeheight+mc.vrSettings.jumpThreshold){
+		    //Jump
+		    if(player.onGround)
+			    player.jump();
+	    }
+
+	    if(mc.vrSettings.realisticSneakEnabled && currentY<eyeheight-mc.vrSettings.sneakThreshold){
+		    //Sneak
+		    Minecraft.getMinecraft().sneakOverride=true;
+	    }else{
+		    Minecraft.getMinecraft().sneakOverride=false;
+	    }
         
         if(mc.vrSettings.seated) freeMoveMode = true;
         
         this.checkandUpdateRotateScale(false);
+
+	    mc.swimTracker.doProcess(mc,player);
       
        if(mc.vrSettings.vrAllowCrawling){         //experimental
 //           topofhead = (double) (mc.roomScale.getHMDPos_Room().yCoord + .05);
@@ -193,7 +229,7 @@ public class OpenVRPlayer implements IRoomscaleAdapter
         if (getFreeMoveMode()) {
         	
         		if(player.movementInput.moveForward ==0) doPlayerMoveInRoom(player);
-        	
+
 			  return; //let mc handle look direction movement
 			// controller vs gaze movement is handled in Entity.java > moveFlying
           }
@@ -397,11 +433,20 @@ public class OpenVRPlayer implements IRoomscaleAdapter
         {
 			doPlayerMoveInRoom(player);
         }
+
+
+
         mc.mcProfiler.endSection();
     }
 
-    
-    public void doTeleportCallback(){
+	private Vec3d getHeadCenter(Minecraft mc) {
+		Vec3d hmdpos=mc.roomScale.getHMDPos_Room();
+		Vec3d hmddir= mc.roomScale.getHMDDir_World().normalize().scale(mc.vrSettings.headToHmdLength);
+		return hmdpos.add(hmddir.scale(-1));
+	}
+
+
+	public void doTeleportCallback(){
         Minecraft mc = Minecraft.getMinecraft();
 
         this.disableSwing = 3;
@@ -423,6 +468,7 @@ public class OpenVRPlayer implements IRoomscaleAdapter
     private boolean wasYMoving;
     
     private void doPlayerMoveInRoom(EntityPlayerSP player){
+
      	if(roomScaleMovementDelay > 0){
     		roomScaleMovementDelay--;
     		return;
@@ -510,6 +556,8 @@ public class OpenVRPlayer implements IRoomscaleAdapter
     		if(!notyet){
     			double xOffset = torso.xCoord - x;
     			double zOffset = torso.zCoord - z;
+
+
     			bb = bb.offset(xOffset, 0, zOffset);
          	 
     			for (int i = 0; i <=10 ; i++)
@@ -1115,6 +1163,16 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 
 	public float getTeleportEnergy () {return teleportEnergy;}
 
+
+	Vec3d getWalkMultOffset(){
+		EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+		if(player==null || !player.initFromServer)
+			return Vec3d.ZERO;
+		float walkmult=Minecraft.getMinecraft().vrSettings.walkMultiplier;
+		Vec3d pos=vecMult(MCOpenVR.getCenterEyePosition(),worldScale);
+		return new Vec3d(pos.xCoord*walkmult,pos.yCoord,pos.zCoord*walkmult).subtract(pos);
+	}
+
 	//================= IROOMSCALEADAPTER =============================
 	
 	
@@ -1131,8 +1189,9 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 	}
 	
 	@Override
-	public Vec3d getHMDPos_World() {	
-		Vec3d out = vecMult(MCOpenVR.getCenterEyePosition(),worldScale).rotateYaw(worldRotationRadians);
+	public Vec3d getHMDPos_World() {
+		Vec3d out = vecMult(MCOpenVR.getCenterEyePosition(),worldScale).rotateYaw(worldRotationRadians)
+				.add(getWalkMultOffset());
 		return out.addVector(roomOrigin.xCoord, roomOrigin.yCoord, roomOrigin.zCoord);
 	}
 
@@ -1187,7 +1246,8 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 	
 	@Override
 	public Vec3d getEyePos_World(renderPass eye) {
-		Vec3d out = vecMult(MCOpenVR.getEyePosition(eye),worldScale).rotateYaw(worldRotationRadians);
+		Vec3d out = vecMult(MCOpenVR.getEyePosition(eye),worldScale).rotateYaw(worldRotationRadians)
+				.add(getWalkMultOffset());
 		return out.addVector(roomOrigin.xCoord, roomOrigin.yCoord, roomOrigin.zCoord);
 	}
 	
@@ -1215,17 +1275,19 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 	
 	@Override
 	public Vec3d getHMDPos_Room() {
-		return vecMult(MCOpenVR.getCenterEyePosition(),worldScale);
+		return vecMult(MCOpenVR.getCenterEyePosition(),worldScale).add(getWalkMultOffset());
+
 	}
 
 	@Override
 	public Vec3d getControllerPos_Room(int i) {
-		return vecMult(MCOpenVR.getAimSource(i),worldScale);
+		return vecMult(MCOpenVR.getAimSource(i),worldScale).add(getWalkMultOffset());
 	}
 	
 	@Override
 	public Vec3d getEyePos_Room(renderPass eye) {
-		return vecMult(MCOpenVR.getEyePosition(eye),worldScale);
+		return vecMult(MCOpenVR.getEyePosition(eye),worldScale).add(getWalkMultOffset());
+
 	}
 
 	@Override
@@ -1247,7 +1309,7 @@ public class OpenVRPlayer implements IRoomscaleAdapter
 
 	@Override
 	public Vec3d getControllerPos_World(int c) {
-		Vec3d out = vecMult(MCOpenVR.getAimSource(c),worldScale);
+		Vec3d out = vecMult(MCOpenVR.getAimSource(c),worldScale).add(getWalkMultOffset());
 		out =out.rotateYaw(worldRotationRadians);
 		return out.addVector(roomOrigin.xCoord, roomOrigin.yCoord, roomOrigin.zCoord);
 	}

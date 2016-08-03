@@ -8,6 +8,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.SortedSet;
 
+import com.mtbs3d.minecrift.provider.MCOpenVR;
 import com.mtbs3d.minecrift.settings.profile.ProfileReader;
 import com.mtbs3d.minecrift.control.VRControllerButtonMapping;
 import com.mtbs3d.minecrift.control.ViveButtons;
@@ -192,10 +193,18 @@ public class VRSettings
     public boolean vrTouchHotbar = true;
     public boolean seated = false;
     private Minecraft mc;
+    public float jumpThreshold=0.05f;
+    public float sneakThreshold=0.4f;
+    public boolean realisticJumpEnabled=true;
+    public boolean realisticSneakEnabled=true;
+    public float walkMultiplier=1;
+
 
     private File optionsVRFile;
     private File optionsVRBackupFile;
-    
+    public double headToHmdLength=0.10f;
+
+
     public VRSettings( Minecraft minecraft, File dataDir )
     {
         // Assumes GameSettings (and hence optifine's settings) have been read first
@@ -730,6 +739,31 @@ public class VRSettings
                     {
                     	  this.seated = optionTokens[1].equals("true");
                     }
+
+                    if(optionTokens[0].equals("jumpThreshold")){
+                        this.jumpThreshold=this.parseFloat(optionTokens[1]);
+                    }
+
+                    if(optionTokens[0].equals("sneakThreshold")){
+                        this.sneakThreshold=this.parseFloat(optionTokens[1]);
+                    }
+
+                    if(optionTokens[0].equals("realisticSneakEnabled")){
+                        this.realisticSneakEnabled=optionTokens[1].equals("true");
+                    }
+
+                    if(optionTokens[0].equals("realisticJumpEnabled")){
+                        this.realisticJumpEnabled=optionTokens[1].equals("true");
+                    }
+
+                    if(optionTokens[0].equals("headToHmdLength")){
+                        this.headToHmdLength=parseFloat(optionTokens[1]);
+                    }
+
+                    if(optionTokens[0].equals("walkMultiplier")){
+                        this.walkMultiplier=parseFloat(optionTokens[1]);
+                    }
+
                     if (optionTokens[0].startsWith("BUTTON_"))
                     {
                        VRControllerButtonMapping vb = new VRControllerButtonMapping(
@@ -1068,6 +1102,14 @@ public class VRSettings
             case PLAY_MODE_SEATED:
             	return this.seated ? var4 + "SEATED" : var4 + "STANDING";
                 //END JRBUDDA
+            case REALISTIC_JUMP:
+                return this.realisticJumpEnabled ? var4 + "ON" : var4 + "OFF";
+            case REALISTIC_SNEAK:
+                return this.realisticSneakEnabled ? var4 + "ON" : var4 + "OFF";
+            case CALIBRATE_HEIGHT:
+                return var2;
+            case WALK_MULTIPLIER:
+                return var4+ String.format("%.1f",walkMultiplier);
  	        default:
 	        	return "";
         }
@@ -1118,6 +1160,8 @@ public class VRSettings
 				return this.chatOffsetX;
 			case CHAT_OFFSET_Y:
 				return this.chatOffsetY;
+            case WALK_MULTIPLIER:
+                return this.walkMultiplier;
             // VIVE START - new options
             case WORLD_SCALE:
             	
@@ -1361,6 +1405,20 @@ public class VRSettings
                 this.seated = !this.seated;
                 break;
                 //JRBUDDA
+            case REALISTIC_JUMP:
+                realisticJumpEnabled = !realisticJumpEnabled;
+                break;
+            case REALISTIC_SNEAK:
+                realisticSneakEnabled = !realisticSneakEnabled;
+                break;
+            case CALIBRATE_HEIGHT:
+                if(seated){
+                    MCOpenVR.vrsystem.ResetSeatedZeroPose.apply();
+                }else {
+                    playerEyeHeight = (float) Minecraft.getMinecraft().roomScale.getHMDPos_Room().yCoord;
+                }
+                break;
+
                 
             default:
                     break;
@@ -1438,6 +1496,9 @@ public class VRSettings
 	        case CHAT_OFFSET_Y:
 	        	this.chatOffsetY = par2;
 	        	break;
+            case WALK_MULTIPLIER:
+                this.walkMultiplier=par2;
+                break;
             // VIVE START - new options
             case WORLD_SCALE:
             	if(par2 ==  0) vrWorldScale = 0.1f;
@@ -1598,6 +1659,12 @@ public class VRSettings
             var5.println("vrFixedCamrotRoll:" + this.vrFixedCamrotRoll);
             var5.println("vrTouchHotbar:" + this.vrTouchHotbar);
             var5.println("seated:" + this.seated);
+            var5.println("jumpThreshold:" + this.jumpThreshold);
+            var5.println("sneakThreshold:" + this.sneakThreshold);
+            var5.println("realisticJumpEnabled:" + this.realisticJumpEnabled);
+            var5.println("realisticSneakEnabled:" + this.realisticSneakEnabled);
+            var5.println("headToHmdLength:" + this.headToHmdLength);
+            var5.println("walkMultiplier:" + this.walkMultiplier);
 
             if (vrQuickCommands == null) vrQuickCommands = getQuickCommandsDefaults(); //defaults
             
@@ -1715,6 +1782,10 @@ public class VRSettings
     public void setMinecraftPlayerEyeHeight(float eyeHeight)
     {
         this.playerEyeHeight = eyeHeight;
+    }
+
+    public float getMinecraftPlayerEyeHeight(){
+        return playerEyeHeight;
     }
 
 
@@ -1921,6 +1992,10 @@ public class VRSettings
         TOUCH_HOTBAR("Touch Hotbar Enabled", false, true),
         PLAY_MODE_SEATED("Play Mode", false, true),
         //END JRBUDDA
+        REALISTIC_JUMP("Realistic Jumping",false,true),
+        REALISTIC_SNEAK("Realistic Sneaking",false,true),
+        CALIBRATE_HEIGHT("Calibrate Height",false,true),
+        WALK_MULTIPLIER("Walking Multipier",true,false),
         
         // OTher buttons
         OTHER_HUD_SETTINGS("Overlay/Crosshair/Chat...", false, true),

@@ -4,6 +4,7 @@
 */
 package com.mtbs3d.minecrift.settings;
 
+import com.mtbs3d.minecrift.provider.MCOpenVR;
 import com.mtbs3d.minecrift.provider.OpenVRPlayer;
 import com.mtbs3d.minecrift.settings.VRSettings;
 import net.minecraft.client.Minecraft;
@@ -227,6 +228,10 @@ public class VRHotkeys {
 		if (Keyboard.getEventKey() == Keyboard.KEY_HOME && Keyboard.isKeyDown(Keyboard.KEY_RCONTROL))
 		{
 			snapMRCam(mc);
+			gotKey = true;
+		}
+		if(Keyboard.getEventKey() == Keyboard.KEY_F12){
+
 			gotKey = true;
 		}
 

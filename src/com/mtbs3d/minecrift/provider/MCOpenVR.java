@@ -73,7 +73,7 @@ public class MCOpenVR
 	private static boolean initialized;
 	private static Minecraft mc;
 
-	static VR_IVRSystem_FnTable vrsystem;
+	public static VR_IVRSystem_FnTable vrsystem;
 	static VR_IVRCompositor_FnTable vrCompositor;
 	static VR_IVROverlay_FnTable vrOverlay;
 	static VR_IVRSettings_FnTable vrSettings;
@@ -405,7 +405,7 @@ public class MCOpenVR
 	
 	public static void initOpenVRCompositor(boolean set) throws Exception
 	{
-		if( set && vrsystem.GetFloatTrackedDeviceProperty != null ) {
+		if( set && vrsystem != null ) {
 			vrCompositor = new VR_IVRCompositor_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRCompositor_Version, hmdErrorStore));
 			if(vrCompositor != null && hmdErrorStore.get(0) == 0){                
 				System.out.println("OpenVR Compositor initialized OK.");
@@ -1608,7 +1608,7 @@ private static void processGui() {
 	/**
 	 * Resets the current origin position
 	 */
-	
+
 	public void resetOrigin()
 	{
 		// not needed with Lighthouse

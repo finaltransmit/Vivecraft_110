@@ -27,22 +27,20 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
 
     static VROption[] vrOnDeviceList = new VROption[]
         {
-            // VIVE START - hide options not relevant to teleport/room scale
-            new VROption(202,                                      VROption.Position.POS_RIGHT,  2,  VROption.ENABLED, "HUD Settings..."),
-            new VROption(206,                                      VROption.Position.POS_LEFT,   1f, VROption.ENABLED, "Stereo Rendering..."),
-            new VROption(207,								         VROption.Position.POS_RIGHT,  1f, VROption.ENABLED, "Quick Commands"),
-            new VROption(209,                                      VROption.Position.POS_LEFT,   2f, VROption.ENABLED, "Locomotion Settings..."),
-            new VROption(210, 							           VROption.Position.POS_RIGHT,  3f, VROption.ENABLED, "Chat/Crosshair Settings..."),
-            new VROption(220, 							           VROption.Position.POS_LEFT,   3f, VROption.ENABLED, "Controller Buttons..."),
-            new VROption(VRSettings.VrOptions.PLAY_MODE_SEATED,       VROption.Position.POS_LEFT,   4.5f, VROption.ENABLED, null),
-            new VROption(VRSettings.VrOptions.REVERSE_HANDS,       VROption.Position.POS_RIGHT,   4.5f, VROption.ENABLED, null),
-            new VROption(VRSettings.VrOptions.WORLD_SCALE,       	VROption.Position.POS_LEFT,   6f, VROption.ENABLED, null),
-            new VROption(VRSettings.VrOptions.WORLD_ROTATION,       VROption.Position.POS_RIGHT,   6f, VROption.ENABLED, null),
-            new VROption(VRSettings.VrOptions.WORLD_ROTATION_INCREMENT,VROption.Position.POS_RIGHT,   7f, VROption.ENABLED, null),
-            new VROption(221,									     VROption.Position.POS_LEFT,   7f, VROption.ENABLED, "Reset to Defaults"),
-            
-            
-            // VIVE END - hide options not relevant to teleport/room scale
+		        // VIVE START - hide options not relevant to teleport/room scale
+		        new VROption(202,                                           VROption.Position.POS_RIGHT, 2,     VROption.ENABLED, "HUD Settings..."),
+		        new VROption(206,                                           VROption.Position.POS_LEFT, 1f,     VROption.ENABLED, "Stereo Rendering..."),
+		        new VROption(207,                                           VROption.Position.POS_RIGHT, 1f,    VROption.ENABLED, "Quick Commands"),
+		        new VROption(209,                                           VROption.Position.POS_LEFT, 2f,     VROption.ENABLED, "Locomotion Settings..."),
+		        new VROption(210,                                           VROption.Position.POS_RIGHT, 3f,    VROption.ENABLED, "Chat/Crosshair Settings..."),
+		        new VROption(220,                                           VROption.Position.POS_LEFT, 3f,     VROption.ENABLED, "Controller Buttons..."),
+		        new VROption(VRSettings.VrOptions.PLAY_MODE_SEATED,         VROption.Position.POS_LEFT, 5.5f,   VROption.ENABLED, null),
+		        new VROption(VrOptions.CALIBRATE_HEIGHT,                    VROption.Position.POS_RIGHT, 5.5f,   VROption.ENABLED, null),
+		        new VROption(221,                                           VROption.Position.POS_LEFT, 7f,     VROption.ENABLED, "Reset to Defaults"),
+		        new VROption(222,                                           VROption.Position.POS_LEFT, 4,     VROption.ENABLED, "Misc. Settings"),
+
+
+		        // VIVE END - hide options not relevant to teleport/room scale
         };
 
     /** An array of all of EnumOption's video options. */
@@ -58,7 +56,7 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
         settings = gameSettings;
     }
 
-    private GuiSliderEx rotationSlider;
+
     
     /**
      * Adds the buttons (and other controls) to the screen in question.
@@ -89,26 +87,11 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
                 float maxValue = 1.0f;
                 float increment = 0.001f;
                 
-    			if(o == VrOptions.WORLD_SCALE){
-                     minValue = 0f;
-                     maxValue = 29f;
-                     increment = 1f;
-    			}
-    			else if (o == VrOptions.WORLD_ROTATION){
-                     minValue = 0f;
-                     maxValue = 360f;
-                     increment = Minecraft.getMinecraft().vrSettings.vrWorldRotationIncrement;
-    			}
-    			else if (o == VrOptions.WORLD_ROTATION_INCREMENT){
-                    minValue = 0f;
-                    maxValue = 4f;
-                    increment = 1f;
-   			}
+
     	        GuiSliderEx slider = new GuiSliderEx(o.returnEnumOrdinal(), width, height, o, this.guivrSettings.getKeyBinding(o), minValue, maxValue, increment, this.guivrSettings.getOptionFloatValue(o));
     	        slider.setEventHandler(this);
     	        slider.enabled = true;
     	        this.buttonList.add(slider);
-    	        if (o == VrOptions.WORLD_ROTATION)rotationSlider = slider;
     		}
 	
     	}
@@ -186,6 +169,11 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
                 this.guivrSettings.saveOptions();
                 this.mc.displayGuiScreen(new GuiOtherHUDSettings(this, this.guivrSettings));
             }
+            else if(par1GuiButton.id == 222)
+            {
+	            this.guivrSettings.saveOptions();
+	            this.mc.displayGuiScreen(new GuiMiscSettings(this, this.guivrSettings));
+            }
             else if (par1GuiButton.id == 220)
             {
                 this.guivrSettings.saveOptions();
@@ -193,10 +181,6 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
             }
             else if (par1GuiButton.id == 221)
             {
-                mc.vrSettings.vrReverseHands = false;
-                mc.vrSettings.vrWorldRotation = 0;
-                mc.vrSettings.vrWorldScale = 1;
-                mc.vrSettings.vrWorldRotationIncrement = 45f;
                 mc.vrSettings.seated = false;
                 this.guivrSettings.saveOptions();
                 this.initGui();
@@ -240,26 +224,6 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
                     "  Pitch Only: View ratcheting applied to Pitch only.",
                     "  Yaw and Pitch: You guessed it...",
             } ;
-        case WORLD_SCALE:
-            return new String[] {
-                    "Scales the player in the world.",
-                    "Above one makes you larger",
-                    "And below one makes you small",
-                    "And the ones that mother gives you",
-                    "don't do anything at all."
-            };
-        case WORLD_ROTATION:
-            return new String[] {
-                    "Adds extra rotation to your HMD.",
-                    "More useful bound to a button or ",
-                    "changed with the arrow keys."
-            };
-        case WORLD_ROTATION_INCREMENT:
-            return new String[] {
-                    "How many degrees to rotate when",
-                    "rotating the world."
-                    
-            };
         case PLAY_MODE_SEATED:
             return new String[] {
                     "Standing or seated play mode",
@@ -338,11 +302,7 @@ public class GuiMinecriftSettings extends BaseGuiSettings implements GuiEventEx
 
 	@Override
 	public boolean event(int id, VrOptions enumm) {
-		if(enumm == VrOptions.WORLD_ROTATION_INCREMENT){
-	        mc.vrSettings.vrWorldRotation = 0;
-	        rotationSlider.increment = mc.vrSettings.vrWorldRotationIncrement;
-	        rotationSlider.setValue(0);			
-		}
+
 
 		
 		// TODO Auto-generated method stub
